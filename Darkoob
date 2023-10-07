@@ -1,0 +1,52 @@
+import logging
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
+
+# Set up logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
+
+# Define states for conversation
+START, CHOOSING_GAME = range(2)
+
+# Create a dictionary to store user data
+user_data = {}
+
+# Define the start function
+def start(update, context):
+    user = update.effective_user
+    update.message.reply_html(
+        fr'Hi {user.mention_html()}!',
+        reply_markup=None
+    )
+    return CHOOSING_GAME
+
+# Define a function to choose a game
+def choose_game(update, context):
+    user_data['selected_game'] = update.message.text
+    update.message.reply_text(f'You selected the game: {user_data["selected_game"]}')
+    return ConversationHandler.END
+
+# Define a function to cancel the conversation
+def cancel(update, context):
+    update.message.reply_text('Canceled')
+    return ConversationHandler.END
+
+# Create an Updater and get the dispatcher
+updater = Updater('6587139260:AAFHCsZ_5zuoGx3n_PB2UEkZOEBiBDlXhpk', use_context=True)
+dispatcher = updater.dispatcher
+
+# Create conversation handler
+conv_handler = ConversationHandler(
+    entry_points=[CommandHandler('start', start)],
+    states={
+        CHOOSING_GAME: [MessageHandler(Filters.text & ~Filters.command, choose_game)],
+    },
+    fallbacks=[CommandHandler('cancel', cancel)],
+)
+
+# Add the conversation handler to the dispatcher
+dispatcher.add_handler(conv_handler)
+
+# Start the bot
+updater.start_polling()
+updater.idle()
